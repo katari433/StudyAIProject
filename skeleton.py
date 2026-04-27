@@ -255,21 +255,13 @@ def delete_class(class_id: int):
 
 # ---------------------------------------------------------
 # Flashcard Endpoints
-# Main Issue: Flashcard Endpoints
-# Subissues:
-# 1. Generate flashcards for a class
-# 2. Get all flashcard sets for a class
-# 3. Get one flashcard set by ID
-# 4. Delete a flashcard set
 # ---------------------------------------------------------
 
 @app.post("/flashcards/generate", response_model=FlashcardSetResponse)
 def generate_flashcards(request: FlashcardGenerationRequest):
     """
-    Subissue 1:
-    Generate a new flashcard set for a class using AI.
+    Generate a flashcard set for a class using AI.
     """
-
     if request.class_id not in classes_db:
         raise HTTPException(status_code=404, detail="Class not found")
 
@@ -279,25 +271,22 @@ def generate_flashcards(request: FlashcardGenerationRequest):
 
     flashcard_set_id = len(flashcards_db) + 1
 
-    new_flashcard_set = FlashcardSetResponse(
+    new_set = FlashcardSetResponse(
         id=flashcard_set_id,
         class_id=request.class_id,
         flashcards=flashcards,
         created_at=datetime.now()
     )
 
-    flashcards_db[flashcard_set_id] = new_flashcard_set
-
-    return new_flashcard_set
+    flashcards_db[flashcard_set_id] = new_set
+    return new_set
 
 
 @app.get("/classes/{class_id}/flashcards", response_model=List[FlashcardSetResponse])
 def get_flashcards_by_class(class_id: int):
     """
-    Subissue 2:
-    Get all flashcard sets connected to one class.
+    Get all flashcard sets for a specific class.
     """
-
     if class_id not in classes_db:
         raise HTTPException(status_code=404, detail="Class not found")
 
@@ -311,10 +300,8 @@ def get_flashcards_by_class(class_id: int):
 @app.get("/flashcards/{flashcard_set_id}", response_model=FlashcardSetResponse)
 def get_single_flashcard_set(flashcard_set_id: int):
     """
-    Subissue 3:
-    Get one flashcard set by its ID.
+    Get one flashcard set by ID.
     """
-
     if flashcard_set_id not in flashcards_db:
         raise HTTPException(status_code=404, detail="Flashcard set not found")
 
@@ -324,19 +311,13 @@ def get_single_flashcard_set(flashcard_set_id: int):
 @app.delete("/flashcards/{flashcard_set_id}")
 def delete_flashcard_set(flashcard_set_id: int):
     """
-    Subissue 4:
-    Delete one flashcard set by its ID.
+    Delete a flashcard set.
     """
-
     if flashcard_set_id not in flashcards_db:
         raise HTTPException(status_code=404, detail="Flashcard set not found")
 
     del flashcards_db[flashcard_set_id]
-
-    return {
-        "message": "Flashcard set deleted successfully",
-        "deleted_flashcard_set_id": flashcard_set_id
-    }
+    return {"message": "Flashcard set deleted successfully"}
 
 
 # ---------------------------------------------------------
