@@ -1,3 +1,126 @@
+# Python Environments & Packages
+.venv/
 venv/
-**/__pycache__/
-*.pyc
+env/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+
+# Virtual environments
+.Python
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+
+# IDE & Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.env.local
+.env.*.local
+*.sublime-project
+*.sublime-workspace
+.project
+.pydevproject
+
+# Environment Files
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Database Files
+*.db
+*.sqlite
+*.sqlite3
+studyai.db
+
+# Alembic Migration Files (template version)
+alembic/versions/*.py
+!alembic/versions/.gitkeep
+
+# Logs & Temporary Files
+*.log
+logs/
+*.out
+.tmp/
+tmp/
+
+# OS Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# Node (for frontend)
+node_modules/
+npm-debug.log
+yarn-error.log
+.next/
+out/
+dist/
+
+# Build outputs
+build/
+dist/
+*.egg-info/
+
+# MCP Server Files (if applicable)
+.mcp/
+mcp-logs/
+
+# Local development only
+local.py
+local_settings.py
