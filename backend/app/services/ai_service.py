@@ -1,106 +1,176 @@
-from pydantic import BaseModel, Field
-from typing import List, Optional
 import json
-import openai 
+from typing import List, Optional
 
-# ---------------------------------------------------------
-# Pydantic Schemas
-# ---------------------------------------------------------
+from fastapi import HTTPException
+from pydantic import BaseModel
 
-# Exam Schemas
-class ExamRequest(BaseModel):
-    prompt: str  # The study material/notes
-    number_of_questions: int = 5 
+from mcp import ClientSession, StdioServerParameters
+from mcp.client.stdio import stdio_client
 
-class ExamQuestion(BaseModel):
-    question: str
-    choices: List[str]
-    correct_answer: str
 
-class ExamResponse(BaseModel):
-    questions: List[ExamQuestion]
+# SCHEMAS
 
-# Flashcard Schemas (Skeletons)
 class FlashcardRequest(BaseModel):
     prompt: str
+
+
+class ExamRequest(BaseModel):
+    prompt: str
+
 
 class Flashcard(BaseModel):
     question: str
     answer: str
 
+
 class FlashcardResponse(BaseModel):
     flashcards: List[Flashcard]
 
 
-# ---------------------------------------------------------
-# AI Service / MCP Integration
-# ---------------------------------------------------------
+class ExamQuestion(BaseModel):
+    question_type: str
+    question: str
+    choices: Optional[List[str]] = None
+    correct_answer: str
+
+
+class ExamResponse(BaseModel):
+    questions: List[ExamQuestion]
+
+
+# MCP CALL
 
 async def call_mcp_ai_service(prompt: str) -> str:
-    """
-    Connects to the OpenAI API via MCP. 
-    Currently returns a mock JSON string for testing logic flow.
-    """
-    # TODO: Integrate real OpenAI AsyncOpenAI client here
-    # Example Mock Response:
-    mock_response = {
-        "questions": [
-            {
-                "question": "What is the primary goal of this AI project?",
-                "choices": ["To play games", "To generate study tools", "To cook food", "To browse social media"],
-                "correct_answer": "To generate study tools"
-            }
-        ]
-    }
-    return json.dumps(mock_response)
+    server_params = StdioServerParameters(
+        command="python3",
+        args=["mcp_study_server.py"],
+    )
 
-
-# ---------------------------------------------------------
-# Prompt Builders (Issue #13 & #14)
-# ---------------------------------------------------------
-
-def build_exam_prompt(source_text: str, num_questions: int = 5) -> str:
-    """
-    Issue #14: Creates a structured prompt for multiple-choice exams.
-    """
-    return f"""
-    Create a {num_questions}-question multiple-choice practice exam based on the following text.
-    Return the response in a strict JSON format with a "questions" key.
-    Each question must have exactly 4 choices and 1 correct_answer string.
-
-    TEXT:
-    {source_text}
-    """
-
-def build_flashcard_prompt(source_text: str) -> str:
-    """
-    Issue #13: Skeleton for flashcard prompt generation.
-    """
-    return f"Generate a JSON list of flashcards for the following material: {source_text}"
-
-
-# ---------------------------------------------------------
-# Response Parsers (Issue #15 & #16)
-# ---------------------------------------------------------
-
-def parse_exam(ai_response: str) -> ExamResponse:
-    """
-    Issue #15: Validates AI response and converts it into an ExamResponse object.
-    """
     try:
-        # Clean up possible markdown formatting (e.g., ```json ... ```)
-        clean_json = ai_response.strip().replace("```json", "").replace("```", "")
-        data = json.loads(clean_json)
-        
-        # This maps the raw dictionary to our Pydantic classes
-        return ExamResponse(questions=[ExamQuestion(**q) for q in data["questions"]])
+        async with stdio_client(server_params) as (read, write):
+            async with ClientSession(read, write) as session:
+                await session.initialize()
+
+                response = await session.call_tool(
+                    "generate_study_material",
+                    arguments={"prompt": prompt}
+                )
+
+                if response.content and len(response.content) > 0:
+                    return response.content[0].text
+
+                raise HTTPException(
+                    status_code=500,
+                    detail="MCP server returned no content"
+                )
+
     except Exception as e:
-        print(f"Parsing error in Exam: {e}")
-        return ExamResponse(questions=[])
+        raise HTTPException(
+            status_code=500,
+            detail=f"MCP AI service error: {str(e)}"
+        )
+
+
+# PROMPT BUILDERS
+
+def build_flashcard_prompt(user_prompt: str) -> str:
+    return f"""
+Create flashcards based on this user request:
+
+{user_prompt}
+
+Return ONLY raw valid JSON in this exact format:
+
+{{
+  "flashcards": [
+    {{
+      "question": "question text",
+      "answer": "answer text"
+    }}
+  ]
+}}
+
+Rules:
+- Follow the user's requested topic and number of flashcards.
+- Each flashcard must have a question and answer.
+- Do not include markdown.
+- Do not include explanations outside the JSON.
+"""
+
+
+def build_exam_prompt(user_prompt: str) -> str:
+    return f"""
+Create a practice exam based on this user request:
+
+{user_prompt}
+
+Return ONLY raw valid JSON in this exact format:
+
+{{
+  "questions": [
+    {{
+      "question_type": "true_false",
+      "question": "question text",
+      "choices": ["True", "False"],
+      "correct_answer": "True"
+    }},
+    {{
+      "question_type": "short_answer",
+      "question": "question text",
+      "choices": null,
+      "correct_answer": "answer key text"
+    }}
+  ]
+}}
+
+Rules:
+- Follow the user's requested topic, difficulty, and number of questions.
+- Include true/false and short answer questions.
+- Every question must include an answer key.
+- The app does not grade answers; it only shows the answer key.
+- Do not include markdown.
+- Do not include explanations outside the JSON.
+"""
+
+
+# PARSING
+
+def clean_json_response(ai_response: str) -> str:
+    cleaned = ai_response.strip()
+
+    if cleaned.startswith("```json"):
+        cleaned = cleaned.replace("```json", "", 1).strip()
+
+    if cleaned.startswith("```"):
+        cleaned = cleaned.replace("```", "", 1).strip()
+
+    if cleaned.endswith("```"):
+        cleaned = cleaned[:-3].strip()
+
+    return cleaned
+
 
 def parse_flashcards(ai_response: str) -> FlashcardResponse:
-    """
-    Skeleton for flashcard response parsing.
-    """
-    # Temporary mock return to prevent errors
-    return FlashcardResponse(flashcards=[Flashcard(question="Mock?", answer="Mock.")])
+    try:
+        cleaned = clean_json_response(ai_response)
+        data = json.loads(cleaned)
+        return FlashcardResponse(**data)
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to parse flashcard response: {str(e)}"
+        )
+
+
+def parse_exam(ai_response: str) -> ExamResponse:
+    try:
+        cleaned = clean_json_response(ai_response)
+        data = json.loads(cleaned)
+        return ExamResponse(**data)
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to parse exam response: {str(e)}"
+        )
