@@ -11,5 +11,5 @@ app = FastAPI(
 def root():
     return {"message": "Study AI API is running"}
 
-# This line connects the routes your teammate wrote to the app
+# This line connects the modular routes to the app
 app.include_router(ai_router)
