@@ -1,49 +1,21 @@
 import json
+import os
 from typing import List, Optional
 
 from fastapi import HTTPException
-from pydantic import BaseModel
 
-from mcp import ClientSession, StdioServerParameters
-from mcp.client.stdio import stdio_client
+from mcp.client.stdio import StdioServerParameters, stdio_client
+from mcp.client.session import ClientSession
 
+from ..schemas.flashcard import FlashcardResponse
+from ..schemas.exam import ExamResponse
 
-# SCHEMAS
-
-class FlashcardRequest(BaseModel):
-    prompt: str
-
-
-class ExamRequest(BaseModel):
-    prompt: str
-
-
-class Flashcard(BaseModel):
-    question: str
-    answer: str
-
-
-class FlashcardResponse(BaseModel):
-    flashcards: List[Flashcard]
-
-
-class ExamQuestion(BaseModel):
-    question_type: str
-    question: str
-    choices: Optional[List[str]] = None
-    correct_answer: str
-
-
-class ExamResponse(BaseModel):
-    questions: List[ExamQuestion]
-
-
-# MCP CALL
 
 async def call_mcp_ai_service(prompt: str) -> str:
+    server_script = os.path.join(os.path.dirname(__file__), "..", "mcp_study_server.py")
     server_params = StdioServerParameters(
         command="python3",
-        args=["mcp_study_server.py"],
+        args=[os.path.abspath(server_script)],
     )
 
     try:
@@ -52,26 +24,29 @@ async def call_mcp_ai_service(prompt: str) -> str:
                 await session.initialize()
 
                 response = await session.call_tool(
-                    "generate_study_material",
-                    arguments={"prompt": prompt}
+                    "generate_study_material", arguments={"prompt": prompt}
                 )
 
                 if response.content and len(response.content) > 0:
-                    return response.content[0].text
+                    first_item = response.content[0]
+                    text_payload = getattr(first_item, "text", None)
+                    if isinstance(text_payload, str) and text_payload.strip():
+                        return text_payload
+                    raise HTTPException(
+                        status_code=500,
+                        detail="MCP server returned unsupported content type",
+                    )
 
                 raise HTTPException(
-                    status_code=500,
-                    detail="MCP server returned no content"
+                    status_code=500, detail="MCP server returned no content"
                 )
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"MCP AI service error: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"MCP AI service error: {str(e)}")
 
 
 # PROMPT BUILDERS
+
 
 def build_flashcard_prompt(user_prompt: str) -> str:
     return f"""
@@ -135,6 +110,7 @@ Rules:
 
 # PARSING
 
+
 def clean_json_response(ai_response: str) -> str:
     cleaned = ai_response.strip()
 
@@ -158,8 +134,7 @@ def parse_flashcards(ai_response: str) -> FlashcardResponse:
 
     except Exception as e:
         raise HTTPException(
-            status_code=500,
-            detail=f"Failed to parse flashcard response: {str(e)}"
+            status_code=500, detail=f"Failed to parse flashcard response: {str(e)}"
         )
 
 
@@ -171,6 +146,5 @@ def parse_exam(ai_response: str) -> ExamResponse:
 
     except Exception as e:
         raise HTTPException(
-            status_code=500,
-            detail=f"Failed to parse exam response: {str(e)}"
+            status_code=500, detail=f"Failed to parse exam response: {str(e)}"
         )

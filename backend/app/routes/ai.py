@@ -1,16 +1,14 @@
 from fastapi import APIRouter
 
-from ai_service import (
+from ..services.ai_service import (
     call_mcp_ai_service,
     build_flashcard_prompt,
     build_exam_prompt,
     parse_flashcards,
     parse_exam,
-    FlashcardRequest,
-    ExamRequest,
-    FlashcardResponse,
-    ExamResponse
 )
+from ..schemas.flashcard import FlashcardRequest, FlashcardResponse
+from ..schemas.exam import ExamRequest, ExamResponse
 
 router = APIRouter()
 

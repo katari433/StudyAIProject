@@ -16,7 +16,7 @@ Relationships & Cascading:
 Usage:
     from .models import User, Class, FlashcardSet
     from .database import SessionLocal
-    
+
     db = SessionLocal()
     user = db.query(User).filter(User.email == "user@example.com").first()
     classes = user.classes  # Lazy-loaded relationship
@@ -26,14 +26,24 @@ Migrations:
     Alembic auto-generates migrations: alembic revision --autogenerate -m "Add new model"
 """
 
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime, Text, JSON
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Boolean,
+    ForeignKey,
+    DateTime,
+    Text,
+    JSON,
+)
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from .database import Base
+from app.db.database import Base
 
 
 class User(Base):
     """User account model for StudyAI platform"""
+
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -47,6 +57,7 @@ class User(Base):
 
 class Class(Base):
     """Study class model representing a course or topic"""
+
     __tablename__ = "classes"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -70,6 +81,7 @@ class Class(Base):
 
 class FlashcardSet(Base):
     """Flashcard set: collection of Q&A pairs on a specific topic"""
+
     __tablename__ = "flashcard_sets"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -88,6 +100,7 @@ class FlashcardSet(Base):
 
 class Flashcard(Base):
     """Flashcard model: single question-answer pair for studying"""
+
     __tablename__ = "flashcards"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -101,6 +114,7 @@ class Flashcard(Base):
 
 class Exam(Base):
     """Exam model: assessment with multiple questions from class material"""
+
     __tablename__ = "exams"
 
     id = Column(Integer, primary_key=True, index=True)
