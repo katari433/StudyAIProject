@@ -1,5 +1,6 @@
 from typing import List, Optional
 from pydantic import BaseModel
+from datetime import datetime
 
 
 class ExamRequest(BaseModel):
@@ -17,3 +18,15 @@ class ExamQuestion(BaseModel):
 
 class ExamResponse(BaseModel):
     questions: List[ExamQuestion]
+
+
+class ExamModelResponse(BaseModel):
+    id: int
+    title: str
+    class_id: int
+    questions: List[dict]
+    created_at: Optional[datetime] = None
+
+
+class ExamListResponse(BaseModel):
+    exams: List[ExamModelResponse]
