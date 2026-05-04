@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>AI Tools</title>
+  <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+  <div class="container">
+    <h1>AI Study Tools</h1>
+
+    <section class="card">
+      <h2>Flashcard Generator</h2>
+      <textarea id="flashcardInput" placeholder="Paste notes here..."></textarea>
+      <button onclick="handleGenerateFlashcards()">Generate Flashcards</button>
+      <div id="flashcardOutput"></div>
+    </section>
+
+    <section class="card">
+      <h2>Practice Exam Generator</h2>
+      <textarea id="examInput" placeholder="Paste study material here..."></textarea>
+      <button onclick="handleGenerateExam()">Generate Exam</button>
+      <div id="examOutput"></div>
+    </section>
+  </div>
+
+  <script type="module" src="../js/ai.js"></script>
+</body>
+</html>
