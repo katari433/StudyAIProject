@@ -29,6 +29,26 @@ services:
       - "-c"
       - "log_duration=on"
 
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: studyai_backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: "postgresql://studyai_user:studyai_password_change_me@postgres:5432/studyai_db"
+      # Optional: override OPENAI key in production
+      # OPENAI_API_KEY: ""
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    networks:
+      - studyai_network
+    restart: unless-stopped
+
 volumes:
   postgres_data:
     driver: local

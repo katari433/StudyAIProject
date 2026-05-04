@@ -100,10 +100,6 @@ tmp/
 ehthumbs.db
 Thumbs.db
 
-# Docker
-.dockerignore
-docker-compose.override.yml
-
 # Node (for frontend)
 node_modules/
 npm-debug.log
