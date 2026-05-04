@@ -4,6 +4,8 @@ from pydantic import BaseModel
 
 class ExamRequest(BaseModel):
     prompt: str
+    class_id: Optional[int] = None
+    title: Optional[str] = "AI Generated Exam"
 
 
 class ExamQuestion(BaseModel):
